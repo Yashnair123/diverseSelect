@@ -4,7 +4,7 @@ This repository contains code that can be used to reproduce the results in our p
 
 ## Setup
 
-Running simulations and experiments involving the Sharpe ratio and Markowitz objective involve using the `dacs` package. Navigate to the `divSelect` directory 
+Running simulations and experiments involving the Sharpe ratio and Markowitz objective involve using our `dacs` package, which contains custom projected gradient descent solvers. Navigate to the `divSelect` directory 
 and 
 
 * Install `dacs`:
