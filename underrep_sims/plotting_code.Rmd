@@ -1,0 +1,393 @@
+---
+title: "plotting_code"
+output: pdf_document
+date: "2025-04-08"
+---
+
+
+```{r setup, include=FALSE, warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("rtidyverse")
+library(tidyverse)
+library(readr)
+library(latex2exp)
+library(patchwork)
+```
+
+
+Final plots starting here
+
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot/"
+  file_name <- paste0(csv_folder_path, "diversity_results_R_", ml_alg_ind, ".csv")
+diversityR <- read_csv(file_name)
+p <- ggplot(diversityR, aes(x = diversity, y = underrep_ind, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = underrep_ind - 1.96*serr, ymax = underrep_ind + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )
+output_file <- paste0("./final_plots/diversity_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+
+
+
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot/"
+  file_name <- paste0(csv_folder_path, "cluster_results_R_", ml_alg_ind, ".csv")
+clusterR <- read_csv(file_name)
+line_file_name <- paste0(csv_folder_path, "line_results_R_", ml_alg_ind, ".csv")
+lineR <- read_csv(line_file_name)
+
+p <- ggplot(clusterR, aes(x = cluster, y = proportions, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = proportions - 1.96*serr, ymax = proportions + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  geom_hline(data = lineR, aes(yintercept = p0, color = method)) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14))
+
+output_file <- paste0("./final_plots/cluster_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot/"
+  file_name <- paste0(csv_folder_path, "mt_metric_results_R_", ml_alg_ind, ".csv")
+clusterR <- read_csv(file_name)
+clusterR$alpha_num <- as.numeric(sub("alpha = ", "", clusterR$alpha))
+
+
+p <- ggplot(clusterR, aes(x = error_metric, y = rate, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = rate - 1.96*serr, ymax = rate + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  geom_hline(aes(yintercept = alpha_num), linetype = "dashed", color = "black") +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    #axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )
+output_file <- paste0("./final_plots/mt_metric_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot/"
+  file_name <- paste0(csv_folder_path, "num_rejects_results_R_", ml_alg_ind, ".csv")
+clusterR <- read_csv(file_name)
+
+
+p <- ggplot(clusterR, aes(x = num_rejections, y = `#R`, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `#R` - 1.96*serr, ymax = `#R` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )
+output_file <- paste0("./final_plots/num_rejections_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+
+
+
+```{r}
+timeR <- read_csv("./csvs_to_plot/time_R.csv")
+timeR$alpha <- factor(timeR$alpha_var, levels = c(0, 1, 2),
+                       labels = c("alpha=0.05", "alpha=0.2", "alpha=0.35"))
+ggplot(timeR, aes(x = time, y = `Time (sec)`, fill = alpha)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `Time (sec)` - 1.96*serr, ymax = `Time (sec)` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`ML Alg` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )
+ggsave("./final_plots/underrep_time.pdf", width = 9, height = 6)
+```
+
+
+```{r}
+pi0R <- read_csv("./csvs_to_plot/pi0_results_R.csv")
+ggplot(pi0R, aes(x = pi0_x, y = pi0)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = pi0 - 1.96*serr, ymax = pi0 + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(~ `sim setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )+
+  theme(aspect.ratio= 15 / 12)
+ggsave("./final_plots/underrep_pi0.pdf")
+```
+
+
+
+```{r}
+pi0cR <- read_csv("./csvs_to_plot/pi0c_results_R.csv")
+ggplot(pi0cR, aes(x = cluster, y = `pi0 per cluster`)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `pi0 per cluster` - 1.96*serr, ymax = `pi0 per cluster` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(~ `sim setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )+
+  theme(aspect.ratio= 15 / 12)
+ggsave("./final_plots/underrep_pi0c.pdf")
+```
+
+
+100 results:
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot_100/"
+  file_name <- paste0(csv_folder_path, "diversity_results_R_", ml_alg_ind, ".csv")
+diversityR <- read_csv(file_name)
+p <- ggplot(diversityR, aes(x = diversity, y = underrep_ind, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = underrep_ind - 1.96*serr, ymax = underrep_ind + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )
+output_file <- paste0("./final_plots_100/diversity_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+
+
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot_100/"
+  file_name <- paste0(csv_folder_path, "cluster_results_R_", ml_alg_ind, ".csv")
+clusterR <- read_csv(file_name)
+line_file_name <- paste0(csv_folder_path, "line_results_R_", ml_alg_ind, ".csv")
+lineR <- read_csv(line_file_name)
+
+p <- ggplot(clusterR, aes(x = cluster, y = proportions, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = proportions - 1.96*serr, ymax = proportions + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  geom_hline(data = lineR, aes(yintercept = p0, color = method)) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14))
+
+output_file <- paste0("./final_plots_100/cluster_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+
+
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot_100/"
+  file_name <- paste0(csv_folder_path, "count_results_R_", ml_alg_ind, ".csv")
+clusterR <- read_csv(file_name)
+
+p <- ggplot(clusterR, aes(x = cluster, y = counts, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = counts - 1.96*serr, ymax = counts + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14))
+
+output_file <- paste0("./final_plots_100/count_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+
+```{r}
+ml_alg_indices <- 0:2
+for (ml_alg_ind in ml_alg_indices) {
+  csv_folder_path <- "./csvs_to_plot_100/"
+  file_name <- paste0(csv_folder_path, "num_rejects_results_R_", ml_alg_ind, ".csv")
+clusterR <- read_csv(file_name)
+
+
+p <- ggplot(clusterR, aes(x = num_rejections, y = `#R`, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `#R` - 1.96*serr, ymax = `#R` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )
+output_file <- paste0("./final_plots_100/num_rejections_plot_", ml_alg_ind, ".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+}
+```
+
+Most rep results
+```{r}
+csv_folder_path <- "./csvs_to_plot/"
+  file_name <- paste0(csv_folder_path, "most_rep_results_R.csv")
+clusterR <- read_csv(file_name)
+
+
+p <- ggplot(clusterR, aes(x = label, y = count, fill = `ML algo`)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = count - 1.96*serr, ymax = count + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`alpha` ~ `setting`, scales = "free_x") +
+  theme_bw()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 14),   # Increase axis label size
+    legend.title = element_text(size = 14),  # Increase legend title size
+    legend.text = element_text(size = 14),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14)
+  )
+p
+output_file <- paste0("./final_plots/most_rep_plot",".pdf")
+    ggsave(output_file, plot = p, width = 10, height = 5)
+```
+

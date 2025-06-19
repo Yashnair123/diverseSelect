@@ -1,0 +1,283 @@
+---
+title: "plotting_code"
+output: pdf_document
+date: "2025-04-08"
+---
+
+
+```{r setup, include=FALSE, warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#install.packages("rtidyverse")
+library(tidyverse)
+library(readr)
+library(latex2exp)
+```
+
+
+
+```{r, warning = FALSE, message = FALSE}
+line_results_for_R <- read_csv("csvs_to_plot/line_exper_results_for_R.csv")
+experpropResults <- read_csv("csvs_to_plot/exper_results_for_R.csv")
+ggplot(experpropResults, aes(x = cluster, y = proportions, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = proportions - 1.96*serr, ymax = proportions + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`setting`~`alpha`, scales = "free_x") +
+  geom_hline(data = line_results_for_R, aes(yintercept = p0, color = method)) +
+  scale_x_continuous(breaks = c(0,1.),
+                     labels = format(c("Men","Women"),nsmall=1)) +
+  theme_bw() +
+  theme(aspect.ratio= 15 / 12)+
+  
+```
+
+
+
+```{r, warning = FALSE, message = FALSE}
+exper_mt_metric_results_for_R <- read_csv("csvs_to_plot/exper_mt_metric_results_for_R.csv")
+exper_mt_metric_results_for_R$error_metric[exper_mt_metric_results_for_R$error_metric == "FDP"] <- "FDR"
+# Lines <- c(0.1, 0.2, 0.3, 0.4, 0.5)
+# Column <- c("alpha = 0.1", "alpha = 0.2", "alpha = 0.3", "alpha = 0.4", "alpha = 0.5")
+# Lines_in_plot <- data.frame(
+#   alpha = c("alpha = 0.1", "alpha = 0.2", "alpha = 0.3", "alpha = 0.4", "alpha = 0.5"),
+#   hline = Lines
+# )
+Lines <- c(0.05, 0.2, 0.35)
+Column <- c("alpha = 0.05", "alpha = 0.2", "alpha = 0.35")
+Lines_in_plot <- data.frame(
+  alpha = c("alpha = 0.05", "alpha = 0.2", "alpha = 0.35"),
+  hline = Lines
+)
+exper_mt_metric_results_for_R <- merge(exper_mt_metric_results_for_R, Lines_in_plot, by = "alpha")
+
+
+p <- ggplot(exper_mt_metric_results_for_R, aes(x = error_metric, y = rate, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  facet_grid(`setting`~`alpha`, scales = "free_x") +
+  geom_errorbar(
+    aes(ymin = rate - 1.96*serr, ymax = rate + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  geom_hline(data = Lines_in_plot,
+             aes(yintercept = hline),
+             linetype = "dashed",
+             color = "black") +
+  theme_bw() + 
+  theme(aspect.ratio= 15 / 12,
+        axis.title.x = element_blank(),
+    #axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16))
+
+ggsave("hiring_fdr_plot.pdf", p, width = 8, height = 6)
+```
+
+
+
+```{r, warning = FALSE, message = FALSE}
+exper_mt_metric_numr_results_for_R <- read_csv("csvs_to_plot/exper_mt_metric_numr_results_for_R.csv")
+names(exper_mt_metric_numr_results_for_R)[names(exper_mt_metric_numr_results_for_R) == "value"] <- "#R"
+p <- ggplot(exper_mt_metric_numr_results_for_R, aes(x = num_rejections, y = `#R`, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `#R` - 1.96*serr, ymax = `#R` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`setting`~`alpha`, scales = "free_x") +
+  theme_bw() + 
+  theme(aspect.ratio= 15 / 12,
+        axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16))
+
+ggsave("hiring_numr_plot.pdf", p, width = 8, height = 6)
+```
+
+
+
+
+```{r, warning = FALSE, message = FALSE}
+exper_mt_div_results_for_R <- read_csv("csvs_to_plot/exper_diversity_results_for_R.csv")
+p <- ggplot(exper_mt_div_results_for_R, aes(x = diversity, y = underrep_ind, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = underrep_ind - 1.96*serr, ymax = underrep_ind + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`setting` ~ `alpha`, scales = "free_x") +
+  theme_bw() + 
+  theme(aspect.ratio= 15 / 10,
+        axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16))
+
+ggsave("hiring_diversity_plot.pdf", p, width = 8, height = 6)
+```
+
+
+```{r, warning = FALSE, message = FALSE}
+exper_time_results <- read_csv("csvs_to_plot/exper_time_results_for_R.csv")
+p <- ggplot(exper_time_results, aes(x = time, y = `Time (sec)`)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `Time (sec)` - 1.96*serr, ymax = `Time (sec)` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(setting ~ `alpha`, scales = "free_x") +
+  theme_bw() + 
+  theme(aspect.ratio= 15 / 10,
+        axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16))
+p
+ggsave("hiring_time_plot.pdf", p, width = 8, height = 6)
+```
+
+
+
+
+Combined plots
+
+```{r}
+library(patchwork)
+line_results_for_R <- read_csv("csvs_to_plot/line_exper_results_for_R.csv")
+experpropResults <- read_csv("csvs_to_plot/exper_results_for_R.csv")
+p1 <- ggplot(experpropResults, aes(x = cluster, y = proportions, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = proportions - 1.96*serr, ymax = proportions + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`setting`~`alpha`, scales = "free_x") +
+  geom_hline(data = line_results_for_R, aes(yintercept = p0, color = method), show.legend = FALSE) +
+  scale_x_continuous(breaks = c(0,1.),
+                     labels = format(c("Men","Women"),nsmall=1)) +
+  theme_bw() +
+  theme(aspect.ratio= 15 / 12)+
+  theme(
+    axis.title.x = element_blank(),
+    #axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16)
+  )
+
+exper_mt_metric_numr_results_for_R <- read_csv("csvs_to_plot/exper_mt_metric_numr_results_for_R.csv")
+names(exper_mt_metric_numr_results_for_R)[names(exper_mt_metric_numr_results_for_R) == "value"] <- "#R"
+p2 <- ggplot(exper_mt_metric_numr_results_for_R, aes(x = num_rejections, y = `#R`, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `#R` - 1.96*serr, ymax = `#R` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`setting`~`alpha`, scales = "free_x") +
+  theme_bw() + 
+  theme(aspect.ratio= 15 / 12)+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16)
+  )
+
+p2 <- p2 + theme(legend.position = "none")
+# combined_plot <- (p1 + p2) +
+#   plot_layout(ncol = 2, guides = "collect") & 
+#   theme(legend.position = "bottom",
+#     legend.spacing = unit(-5, "cm"),  # reduces space between legend and plot
+#     plot.margin = margin(5, 5, 5, 5))   # reduce bottom/top margins if needed)
+combined_plot <- (p1 + plot_spacer() + p2) + 
+  plot_layout(ncol = 3, widths = c(1, -0.3, 1), guides = "collect") & 
+  theme(
+    legend.position = "bottom",
+    legend.box.margin = margin(t = -7, b = 0),
+    plot.margin = margin(5, 0, 5, 0)  # narrower side margins (left/right)
+  )
+
+
+combined_plot
+ggsave("hiring_combined_plot.pdf", combined_plot, width = 16, height = 6)
+
+```
+
+
+
+
+
+
+```{r}
+library(tidyverse)
+
+library(readr)
+library(ggplot2)
+library(dplyr)
+
+# Read and relabel method, preserving order
+tradeoff_results <- read_csv("csvs_to_plot/tradeoff_results.csv") %>%
+  mutate(method = recode(method, 
+                         "DACS" = "Our method"),
+         method = factor(method, levels = c("CS", "Our method")))
+
+# Grey shading under the curve (not CI)
+shaded_data <- tradeoff_results %>%
+  filter(method == "Our method")
+
+# Plot
+p <- ggplot(tradeoff_results, aes(x = alpha, y = diversity, color = method, fill = method)) +
+  # Grey shade under the curve
+  geom_ribbon(data = shaded_data, aes(x = alpha, ymin = 0, ymax = diversity),
+              inherit.aes = FALSE, fill = "grey70", alpha = 0.3) +
+  # Confidence ribbon
+  geom_ribbon(aes(ymin = diversity - 1.96 * serr, ymax = diversity + 1.96 * serr),
+              alpha = 0.2, color = NA) +
+  geom_line() +
+  labs(y = "Achieved diversity") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 16),  # Increase axis title size
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16))
+p
+ggsave("initial_tradeoff_plot.pdf", p, width = 10, height = 5)
+```
+
+
+
+
+

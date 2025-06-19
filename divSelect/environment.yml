@@ -1,0 +1,12 @@
+name: dacs
+channels:
+  - conda-forge
+dependencies:
+  - python==3.10
+  - pip
+  - ffmpeg
+  - llvm-openmp==11.1.0
+  - eigen==3.4.0
+  - ccache
+  - pip:
+    - poetry
