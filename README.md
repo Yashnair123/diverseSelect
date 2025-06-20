@@ -22,7 +22,7 @@ and
 ## Usage
 
 ### Simulations
-`sharpe-markowitz_sims_settings1-2` and `sharpe-markowitz_sims_settings3-4`. Contain code to reproduce all of our simulation results involving the Sharpe ratio and Markowitz objective. The files `sherlock_sharpe_driver.py` and `sherlock_markowitz_driver.py` run our method, using our custom PGD solvers. The scripts `sherlock_sharpe_driver_cvxpy.py` or `sherlock_markowitz_driver_cvxpy.py` in `sharpe-markowitz_sims_settings1-2` reproduce results using the MOSEK solver for reward computation. Additionally, the scripts `optimized_sharpe_get_histogram.py` and `optimized_markowitz_get_histogram.py` are used to construct the baseline distributions $\widehat{F}^{\varphi}_{\mathrm{baseline}}$ described in the paper.
+`sharpe-markowitz_sims_settings1-2` and `sharpe-markowitz_sims_settings3-4` contain code to reproduce all of our simulation results involving the Sharpe ratio and Markowitz objective. The files `sherlock_sharpe_driver.py` and `sherlock_markowitz_driver.py` run our method, using our custom PGD solvers. The scripts `sherlock_sharpe_driver_cvxpy.py` or `sherlock_markowitz_driver_cvxpy.py` in `sharpe-markowitz_sims_settings1-2` reproduce results using the MOSEK solver for reward computation. Additionally, the scripts `optimized_sharpe_get_histogram.py` and `optimized_markowitz_get_histogram.py` are used to construct the baseline distributions $\widehat{F}^{\varphi}_{\mathrm{baseline}}$ described in the paper.
 
 The directory `underrep_sims` contains code for our underrepresentation index simulations. To reproduce our results, run either `sherlock_cluster_driver.py` or `sherlock_cluster_driver_100.py` (the latter contains results for $m=100$ test samples).
 
