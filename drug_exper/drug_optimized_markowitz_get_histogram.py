@@ -30,8 +30,8 @@ for variant in tqdm(np.arange(variant_block*3, min((variant_block+1)*3,750))):
     permutation = np.load(f'permutations/perm_j{variant%250}.npy')
     similarityMatrix = unpermuted_similarity_matrix[permutation][:,permutation]
 
-    testS = np.load(f'scores_and_Ys/testS_j{variant%250}.npy')
     quantile_indexer = 1
+    testS = np.load(f'scores_and_Ys/testS_j{variant%250}_q{quantile_indexer}.npy')
     # MAKE SURE TO SAVE FINAL RESULS BY QUANTILE INDEXER
     calibS = np.load(f'scores_and_Ys/calibS_j{variant%250}_q{quantile_indexer}.npy')
     testY = np.load(f'scores_and_Ys/testY_j{variant%250}_q{quantile_indexer}.npy')

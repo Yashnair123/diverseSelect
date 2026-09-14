@@ -162,6 +162,81 @@ ggsave("hiring_time_plot.pdf", p, width = 8, height = 6)
 
 
 
+```{r}
+library(patchwork)
+line_results_for_R <- read_csv("csvs_to_plot/line_exper_results_for_R.csv")
+experpropResults <- read_csv("csvs_to_plot/exper_results_for_R.csv")
+p1 <- ggplot(experpropResults, aes(x = cluster, y = proportions, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = proportions - 1.96*serr, ymax = proportions + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`setting`~`alpha`, scales = "free_x") +
+  geom_hline(data = line_results_for_R, aes(yintercept = p0, color = method), show.legend = FALSE) +
+  scale_x_continuous(breaks = c(0,1.),
+                     labels = format(c("Men","Women"),nsmall=1)) +
+  theme_bw() +
+  theme(aspect.ratio= 15 / 12)+
+  theme(
+    axis.title.x = element_blank(),
+    #axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16)
+  )
+
+exper_mt_metric_numr_results_for_R <- read_csv("csvs_to_plot/exper_mt_metric_numr_results_for_R.csv")
+names(exper_mt_metric_numr_results_for_R)[names(exper_mt_metric_numr_results_for_R) == "value"] <- "#R"
+p2 <- ggplot(exper_mt_metric_numr_results_for_R, aes(x = num_rejections, y = `#R`, fill = method)) +
+  geom_bar(stat = "identity", position = "dodge") + 
+  geom_errorbar(
+    aes(ymin = `#R` - 1.96*serr, ymax = `#R` + 1.96*serr),
+    position = position_dodge(width = 0.9),
+    width = 0.25
+  ) +
+  facet_grid(`setting`~`alpha`, scales = "free_x") +
+  theme_bw() + 
+  theme(aspect.ratio= 15 / 12)+
+  theme(
+    axis.title.x = element_blank(),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text = element_text(size = 16),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16),
+    axis.title = element_text(size = 16)
+  )
+
+p2 <- p2 + theme(legend.position = "none")
+# combined_plot <- (p1 + p2) +
+#   plot_layout(ncol = 2, guides = "collect") & 
+#   theme(legend.position = "bottom",
+#     legend.spacing = unit(-5, "cm"),  # reduces space between legend and plot
+#     plot.margin = margin(5, 5, 5, 5))   # reduce bottom/top margins if needed)
+combined_plot <- (p1 + plot_spacer() + p2) + 
+  plot_layout(ncol = 3, widths = c(1, -0.3, 1), guides = "collect") & 
+  theme(
+    legend.position = "bottom",
+    legend.box.margin = margin(t = -7, b = 0),
+    plot.margin = margin(5, 0, 5, 0)  # narrower side margins (left/right)
+  )
+
+
+combined_plot
+ggsave("hiring_proportions_plot.pdf", p1, width = 8, height = 6)
+
+```
+
+
+
+
+
 Combined plots
 
 ```{r}

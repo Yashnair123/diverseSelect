@@ -4,6 +4,9 @@ import os
 from sklearn.linear_model import LinearRegression
 from dgps import dgp
 from scores import mu_hat
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import SplineTransformer
+from sklearn.linear_model import LogisticRegression
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from dacs_core.vanillaBH import bh
@@ -67,6 +70,26 @@ for job in range(250):
   calibX, calibY, calibComp, _ = dgp(n, x_noise, setting)
   testX, testY, testComp, _ = dgp(m, x_noise, setting)
 
+  train_labels = (trainY <= 0)
+
+  clf = make_pipeline(
+      SplineTransformer(n_knots=8, degree=3, include_bias=False),
+      LogisticRegression(max_iter=5000)
+  )
+  # clf = HistGradientBoostingClassifier(
+  #       max_iter=300,
+  #       learning_rate=0.05,
+  #       max_leaf_nodes=31,
+  #       min_samples_leaf=20
+  #   )
+
+  clf.fit(trainX.reshape(-1, 1), train_labels)
+  
+  class_index = list(clf.classes_).index(True)
+  combinedX = np.concatenate((calibX, testX))
+  probs = clf.predict_proba(combinedX.reshape(-1, 1))[:, class_index]
+  log_likelihoods = np.log(probs)
+
   if ml_alg_ind < 3:
     muHat = mu_hat(ml_alg_ind, trainX[:,np.newaxis], trainY)
     calibS = get_scores(calibX[:,np.newaxis], calibY, muHat)
@@ -81,7 +104,7 @@ for job in range(250):
   
   start = time.time()
   rejections = cluster_exact_diverseSelect(calibS, testS, n, m, alpha, componentPredictions, \
-                                            numComponents, skip)
+                                            numComponents, skip, log_likelihoods=log_likelihoods)
   end = time.time()
 
   counts = np.bincount(testComp[rejections.astype(bool)], \

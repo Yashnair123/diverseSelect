@@ -14,6 +14,85 @@ import cvxpy as cp
 import time
 
 
+def _snis_init(shape):
+    neg_inf = -np.inf
+    log_num_pos = np.full(shape, neg_inf, dtype=float)
+    log_num_neg = np.full(shape, neg_inf, dtype=float)
+    log_den = np.full(shape, neg_inf, dtype=float)
+    return log_num_pos, log_num_neg, log_den
+
+
+def _snis_update(log_num_pos, log_num_neg, log_den, rewards, log_weights):
+    """
+    Online self-normalized IS update in log space.
+
+    rewards: matrix of Monte Carlo rewards (can be negative)
+    log_weights: matrix of log importance weights
+    """
+    finite = np.isfinite(log_weights) & np.isfinite(rewards)
+
+    # Denominator: sum_k w_k
+    den_mask = finite
+    if np.any(den_mask):
+        log_den[den_mask] = np.logaddexp(log_den[den_mask], log_weights[den_mask])
+
+    # Positive numerator contribution: sum_k w_k * reward_k for reward_k > 0
+    pos_mask = finite & (rewards > 0)
+    if np.any(pos_mask):
+        log_num_pos[pos_mask] = np.logaddexp(
+            log_num_pos[pos_mask],
+            log_weights[pos_mask] + np.log(rewards[pos_mask]),
+        )
+
+    # Negative numerator contribution: sum_k w_k * (-reward_k) for reward_k < 0
+    neg_mask = finite & (rewards < 0)
+    if np.any(neg_mask):
+        log_num_neg[neg_mask] = np.logaddexp(
+            log_num_neg[neg_mask],
+            log_weights[neg_mask] + np.log(-rewards[neg_mask]),
+        )
+
+    # reward == 0 contributes nothing to numerator
+
+
+def _snis_finalize(log_num_pos, log_num_neg, log_den):
+    """
+    Returns:
+        (sum_k w_k * reward_k) / (sum_k w_k)
+    computed stably in log space, allowing signed rewards.
+    """
+    out = np.zeros_like(log_den, dtype=float)
+
+    finite_den = np.isfinite(log_den)
+    has_pos = np.isfinite(log_num_pos)
+    has_neg = np.isfinite(log_num_neg)
+
+    only_pos = finite_den & has_pos & (~has_neg)
+    if np.any(only_pos):
+        out[only_pos] = np.exp(log_num_pos[only_pos] - log_den[only_pos])
+
+    only_neg = finite_den & (~has_pos) & has_neg
+    if np.any(only_neg):
+        out[only_neg] = -np.exp(log_num_neg[only_neg] - log_den[only_neg])
+
+    both = finite_den & has_pos & has_neg
+    if np.any(both):
+        pos_ge = both & (log_num_pos >= log_num_neg)
+        if np.any(pos_ge):
+            a = log_num_pos[pos_ge]
+            b = log_num_neg[pos_ge]
+            out[pos_ge] = np.exp(a - log_den[pos_ge]) * (-np.expm1(b - a))
+
+        neg_gt = both & (log_num_neg > log_num_pos)
+        if np.any(neg_gt):
+            a = log_num_neg[neg_gt]
+            b = log_num_pos[neg_gt]
+            out[neg_gt] = -np.exp(a - log_den[neg_gt]) * (-np.expm1(b - a))
+
+    out[~np.isfinite(out)] = 0.0
+    return out
+
+
 default_tol=1e-6
 
 def cluster_exact_diverseSelect(calibS, # calibration scores
@@ -23,7 +102,9 @@ def cluster_exact_diverseSelect(calibS, # calibration scores
                   alpha, # nominal level
                   componentPredictions, # clusters (in same order as combinedScores)
                   numComponents, # number of total components
-                  skip=1 # how much to skip by, if using skipper
+                  skip=1, # how much to skip by, if using skipper
+                  log_likelihoods = None # log P(Y=0|V(X)). Used for self-normalized importance sampling to approx true reward under correct distribution. 
+                           # If None, then just use standard MC.
                   ):
     '''
     Run the method for clustering based objective,
@@ -45,11 +126,12 @@ def cluster_exact_diverseSelect(calibS, # calibration scores
 
     # get rewards (Ys) and Snell envelope (Vs)
     R = cluster_getExactYs(bh_st, bh_numCalibAbove, combinedS, componentPredictions,\
-                            numComponents, n, m, alpha)
+                            numComponents, n, m, alpha, log_likelihoods=log_likelihoods)
     # poss_num_vals_j = n+1-bh_numCalibAbove
     # initialize Ys
 
-    V = constructVs(bh_st, bh_numCalibAbove, R, n, m, skip)
+    sorted_log_likelihoods = log_likelihoods[argsortedS] if log_likelihoods is not None else None
+    V = constructVs(bh_st, bh_numCalibAbove, R, n, m, skip, sorted_log_likelihoods=sorted_log_likelihoods)
 
     indexer = bh_st
     # get indicator array of being calib for sorted scores
@@ -172,7 +254,9 @@ def sharpe_approx_diverseSelect(calibS, # calibration scores
                   couple=True, # whether or not to use coupled sampler
                   skip=1, # how many rows to skip,
                   warm_or_custom = True,
-                  use_mosek_override=True
+                  use_mosek_override=True,
+                  log_likelihoods = None # log P(Y=0|V(X)). Used for self-normalized importance sampling to approx true reward under correct distribution. 
+                           # If None, then just use standard MC.
                   ):
     '''
     Similarity matrix must be computed for all n+m points
@@ -195,6 +279,8 @@ def sharpe_approx_diverseSelect(calibS, # calibration scores
     poss_num_vals_j = n+1-bh_numCalibAbove
     # initialize Ys
     R = np.zeros((bh_st+1, poss_num_vals_j))
+    log_num_pos, log_num_neg, log_den = _snis_init(R.shape)
+    total_weights = np.zeros((bh_st+1, poss_num_vals_j))
     # get rewards (Ys) and Snell envelope (Vs)
     
     print("Monte Carlo approximating rewards...")
@@ -203,21 +289,28 @@ def sharpe_approx_diverseSelect(calibS, # calibration scores
     across_mc_total_time_solving = 0
     for _ in tqdm(range(num_mc_samples)):
         if couple:
-            mcR, total_time_solving = sharpe_coupled_mcApproximateYs(bh_st, bh_numCalibAbove, combinedS, similarityMatrix, \
-                                                 n, m, alpha, skip, warm_starting=warm_or_custom)
+            mcR, log_weights, total_time_solving = sharpe_coupled_mcApproximateYs(bh_st, bh_numCalibAbove, combinedS, similarityMatrix, \
+                                                 n, m, alpha, skip, warm_starting=warm_or_custom, log_likelihoods=log_likelihoods)
         else:
-            mcR, total_time_solving = sharpe_uncoupled_mcApproximateYs(bh_st, bh_numCalibAbove, combinedS, similarityMatrix, \
-                                                   n, m, alpha, skip, custom=warm_or_custom)
+            mcR, log_weights, total_time_solving = sharpe_uncoupled_mcApproximateYs(bh_st, bh_numCalibAbove, combinedS, similarityMatrix, \
+                                                   n, m, alpha, skip, custom=warm_or_custom, log_likelihoods=log_likelihoods)
         across_mc_total_time_solving += total_time_solving
+        
+        # R += (mcR * weights)
+        # total_weights += weights
+        _snis_update(log_num_pos, log_num_neg, log_den, mcR, log_weights)
 
-        R += mcR/num_mc_samples
+    R = _snis_finalize(log_num_pos, log_num_neg, log_den)
 
     end = time.time()
 
     print(f"Total: {end-start} vs {across_mc_total_time_solving}")
     
     start = time.time()
-    V = constructVs(bh_st, bh_numCalibAbove, R, n, m, skip)
+    sortedInds = np.argsort(combinedS)
+    sorted_log_likelihoods = log_likelihoods[sortedInds] if log_likelihoods is not None else None
+
+    V = constructVs(bh_st, bh_numCalibAbove, R, n, m, skip, sorted_log_likelihoods=sorted_log_likelihoods)
 
     indexer = bh_st
     
@@ -252,7 +345,6 @@ def sharpe_approx_diverseSelect(calibS, # calibration scores
         numCalibRejections = n-Si
         y = R[indexer,Si-bh_numCalibAbove]
         v = V[indexer,Si-bh_numCalibAbove]
-
         dontStop = (v > y)
 
     print(f'Stopping index: {indexer}')
@@ -310,7 +402,9 @@ def markowitz_approx_diverseSelect(calibS, # calibration scores
                   couple=True, # whether or not to use coupled sampler (faster)
                   skip=1, # how many rows to skip
                   warm_or_custom = True,
-                  use_mosek_override=True
+                  use_mosek_override=True,
+                  log_likelihoods = None # log P(Y=0|V(X)). Used for self-normalized importance sampling to approx true reward under correct distribution. 
+                           # If None, then just use standard MC.
                   ):
     '''
     Similarity matrix must be computed for all n+m points
@@ -333,22 +427,32 @@ def markowitz_approx_diverseSelect(calibS, # calibration scores
     poss_num_vals_j = n+1-bh_numCalibAbove
     # initialize Ys
     R = np.zeros((bh_st+1, poss_num_vals_j))
+    log_num_pos, log_num_neg, log_den = _snis_init(R.shape)
+    total_weights = np.zeros((bh_st+1, poss_num_vals_j))
     # get rewards (Ys) and Snell envelope (Vs)
     
     across_mc_total_time_solving = 0
     print("Monte Carlo approximating rewards...")
     for _ in tqdm(range(num_mc_samples)):
         if couple:
-            mcR, total_time_solving = markowitz_coupled_mcApproximateYs(bh_st, bh_numCalibAbove, gamma, \
-                                combinedS, similarityMatrix, n, m, alpha, skip, warm_starting=warm_or_custom)
+            mcR, log_weights, total_time_solving = markowitz_coupled_mcApproximateYs(bh_st, bh_numCalibAbove, gamma, \
+                                combinedS, similarityMatrix, n, m, alpha, skip, warm_starting=warm_or_custom, log_likelihoods=log_likelihoods)
         else:
-            mcR, total_time_solving = markowitz_uncoupled_mcApproximateYs(bh_st, bh_numCalibAbove, gamma, \
-                                combinedS, similarityMatrix, n, m, alpha, skip, custom=warm_or_custom)
-        R += mcR/num_mc_samples
+            mcR, log_weights, total_time_solving = markowitz_uncoupled_mcApproximateYs(bh_st, bh_numCalibAbove, gamma, \
+                                combinedS, similarityMatrix, n, m, alpha, skip, custom=warm_or_custom, log_likelihoods=log_likelihoods)
+        # R += (mcR*weights)
+        # total_weights += weights
+        _snis_update(log_num_pos, log_num_neg, log_den, mcR, log_weights)
         across_mc_total_time_solving += total_time_solving
 
+    # R = R / total_weights
+    R = _snis_finalize(log_num_pos, log_num_neg, log_den)
 
-    V = constructVs(bh_st, bh_numCalibAbove, R, n, m, skip)
+
+    sortedInds = np.argsort(combinedS)
+    sorted_log_likelihoods = log_likelihoods[sortedInds] if log_likelihoods is not None else None
+
+    V = constructVs(bh_st, bh_numCalibAbove, R, n, m, skip, sorted_log_likelihoods=sorted_log_likelihoods)
     
 
     indexer = bh_st

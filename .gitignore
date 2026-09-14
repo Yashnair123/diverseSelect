@@ -18,3 +18,4 @@
 !drug_exper/gpcr_interactions.csv
 !drug_exper/GtP_to_AAC_mapping.csv
 !drug_exper/GtP_to_UniProt_mapping.csv
+*.npy

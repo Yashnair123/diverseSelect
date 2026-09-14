@@ -14,7 +14,60 @@ library(gridExtra)
 ```
 
 
-Final plots:
+```{r}
+markowitz_ppf_resultsR <- read_csv("./markowitz_csvs_to_plot/markowitz_ppf_results_wTrue_cTrue.csv")
+markowitz_ppf_resultsR <- markowitz_ppf_resultsR %>%
+  group_by(CS, DACS, gamma, alpha, Setting) %>%
+  mutate(freq = n()) %>%
+  ungroup()
+p2 <- ggplot(markowitz_ppf_resultsR, aes(x = CS, y = DACS, color = gamma, size=freq)) +
+  geom_point(alpha = 0.6) +
+  scale_size_continuous(range = c(2, 10)) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  facet_grid(`alpha` ~ `Setting`) +
+  theme_bw()+
+  ggtitle("Markowitz objective")+
+  theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
+        axis.title = element_text(size = 16),  # Increase axis title size
+    axis.text = element_text(size = 13),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16))
+
+# markowitz_tradeoff_resultsR <- read_csv("./markowitz_csvs_to_plot/markowitz_tradeoff_results.csv")
+# # #markowitz_ppf_resultsR <- markowitz_ppf_resultsR[markowitz_ppf_resultsR$gamma != "gamma=0.25",]
+# ggplot(markowitz_tradeoff_resultsR, aes(x = `% decrease in #R`, y = `% decrease in similarity`, color=gamma)) +
+#   geom_point() +
+#   #facet_wrap(~ alpha + Setting, scales = "free") +
+#   facet_grid(`alpha` ~ `Setting`, scale = "free") +
+#   theme_bw()+
+#   # theme(aspect.ratio = 10/13)+
+#   ggtitle("Markowitz objective")+
+#   theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
+#         axis.title = element_text(size = 16),  # Increase axis title size
+#     axis.text = element_text(size = 16),   # Increase axis label size
+#     legend.title = element_text(size = 16),  # Increase legend title size
+#     legend.text = element_text(size = 16),
+#     strip.text = element_text(size = 16))
+
+# combined_plot <- p1 + plot_spacer()+ p2 +
+#   #plot_layout(ncol = 2, widths = c(1, 1))
+#   plot_layout(ncol = 3, widths = c(1, 0.1, 1))
+# Remove legend from p2
+# p2_clean <- p2 + theme(legend.position = "none")
+p2_clean <- p2 +
+  theme(legend.position = "bottom") +
+  guides(
+    color = guide_legend(order = 1),  # gamma
+    size = guide_legend(order = 2)    # freq
+  )
+
+p2_clean
+```
+
+
+
+
 ```{r}
 sharpe_ppf_resultsR <- read_csv("./sharpe_csvs_to_plot/sharpe_ppf_results_wTrue_cTrue.csv")
 sharpe_ppf_resultsR <- sharpe_ppf_resultsR %>%
@@ -37,6 +90,129 @@ p1 <- ggplot(sharpe_ppf_resultsR, aes(x = CS, y = DACS,size=freq)) +
     legend.title = element_text(size = 16),  # Increase legend title size
     legend.text = element_text(size = 16),
     strip.text = element_text(size = 16))
+# sharpe_tradeoff_resultsR <- read_csv("./sharpe_csvs_to_plot/sharpe_tradeoff_results.csv")
+#  ggplot(sharpe_tradeoff_resultsR, aes(x = `% decrease in #R`, y = `% decrease in similarity`)) +
+#   geom_point() +
+#   facet_grid(`alpha` ~ `Setting`) +
+#   theme_bw()+
+#   # theme(aspect.ratio = 10/13)+
+#   ggtitle("Sharpe ratio")+
+#   theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
+#         axis.title = element_text(size = 16),  # Increase axis title size
+#     axis.text = element_text(size = 16),   # Increase axis label size
+#     legend.title = element_text(size = 16),  # Increase legend title size
+#     legend.text = element_text(size = 16),
+#     strip.text = element_text(size = 16))
+
+markowitz_ppf_resultsR <- read_csv("./markowitz_csvs_to_plot/markowitz_ppf_results_wTrue_cTrue.csv")
+markowitz_ppf_resultsR <- markowitz_ppf_resultsR %>%
+  group_by(CS, DACS, gamma, alpha, Setting) %>%
+  mutate(freq = n()) %>%
+  ungroup()
+p2 <- ggplot(markowitz_ppf_resultsR, aes(x = CS, y = DACS, color = gamma, size=freq)) +
+  geom_point(alpha = 0.6) +
+  scale_size_continuous(range = c(2, 10)) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  facet_grid(`alpha` ~ `Setting`) +
+  theme_bw()+
+  ggtitle("Markowitz objective")+
+  theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
+        axis.title = element_text(size = 16),  # Increase axis title size
+    axis.text = element_text(size = 13),   # Increase axis label size
+    legend.title = element_text(size = 16),  # Increase legend title size
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16))
+
+# markowitz_tradeoff_resultsR <- read_csv("./markowitz_csvs_to_plot/markowitz_tradeoff_results.csv")
+# # #markowitz_ppf_resultsR <- markowitz_ppf_resultsR[markowitz_ppf_resultsR$gamma != "gamma=0.25",]
+# ggplot(markowitz_tradeoff_resultsR, aes(x = `% decrease in #R`, y = `% decrease in similarity`, color=gamma)) +
+#   geom_point() +
+#   #facet_wrap(~ alpha + Setting, scales = "free") +
+#   facet_grid(`alpha` ~ `Setting`, scale = "free") +
+#   theme_bw()+
+#   # theme(aspect.ratio = 10/13)+
+#   ggtitle("Markowitz objective")+
+#   theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
+#         axis.title = element_text(size = 16),  # Increase axis title size
+#     axis.text = element_text(size = 16),   # Increase axis label size
+#     legend.title = element_text(size = 16),  # Increase legend title size
+#     legend.text = element_text(size = 16),
+#     strip.text = element_text(size = 16))
+
+# combined_plot <- p1 + plot_spacer()+ p2 +
+#   #plot_layout(ncol = 2, widths = c(1, 1))
+#   plot_layout(ncol = 3, widths = c(1, 0.1, 1))
+# Remove legend from p2
+# p2_clean <- p2 + theme(legend.position = "none")
+p2_clean <- p2 +
+  theme(legend.position = "bottom") +
+  guides(
+    color = guide_legend(order = 1),  # gamma
+    size = guide_legend(order = 2)    # freq
+  )
+
+# Combine without legend
+# combined_plot <- p1 + p2_clean + plot_layout(ncol = 2, widths = c(1, 1))
+# combined_plot <- grid.arrange(p1, p2, ncol=2)
+combined_plot <- (p1 + p2_clean) + plot_layout(ncol = 2) & theme(legend.position = "bottom", legend.box = "vertical")
+p1 <- p1 +
+  labs(x = NULL, y = NULL) + ggtitle(NULL)
+# Print the final layout
+ggsave("NEW_LIKELIHOOD_combined_sharpe-markowitz_for_talk.pdf", p1, width = 9, height = 8)
+```
+
+
+
+
+Final plots:
+```{r}
+# sharpe_ppf_resultsR <- read_csv("./sharpe_csvs_to_plot/sharpe_ppf_results_wTrue_cTrue.csv")
+# sharpe_ppf_resultsR <- sharpe_ppf_resultsR %>%
+#   group_by(CS, DACS, alpha, Setting) %>%
+#   mutate(freq = n()) %>%
+#   ungroup()
+# p1 <- ggplot(sharpe_ppf_resultsR, aes(x = CS, y = DACS,size=freq)) +
+#   geom_point(alpha = 0.6) +
+#   scale_size_continuous(
+#     range = c(2, 10),
+#     breaks = sort(unique(sharpe_ppf_resultsR$freq))
+#   ) +
+#   geom_abline(slope = 1, intercept = 0, color = "red") +
+#   facet_grid(`alpha` ~ `Setting`) +
+#   theme_bw() +
+#   ggtitle("Sharpe ratio")+
+#   theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
+#         axis.title = element_text(size = 16),  # Increase axis title size
+#     axis.text = element_text(size = 13),   # Increase axis label size
+#     legend.title = element_text(size = 16),  # Increase legend title size
+#     legend.text = element_text(size = 16),
+#     strip.text = element_text(size = 16))
+
+sharpe_ppf_resultsR_plot <- read_csv("./sharpe_csvs_to_plot/sharpe_ppf_results_wTrue_cTrue.csv") %>%
+  count(CS, DACS, alpha, Setting, name = "freq")
+
+p1 <- ggplot(sharpe_ppf_resultsR_plot, aes(x = CS, y = DACS, size = freq)) +
+  geom_point(alpha = 0.6) +
+  scale_size_continuous(
+    range = c(0.5, 4),
+    breaks = sort(unique(sharpe_ppf_resultsR_plot$freq))
+  ) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  facet_grid(`alpha` ~ `Setting`) +
+  theme_bw() +
+  ggtitle("Sharpe ratio") +
+  theme(
+    plot.title = element_text(hjust = 0.5, vjust = 0, size = 16),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 13),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16)
+  )
+
+
+
+
 # sharpe_tradeoff_resultsR <- read_csv("./sharpe_csvs_to_plot/sharpe_tradeoff_results.csv")
 #  ggplot(sharpe_tradeoff_resultsR, aes(x = `% decrease in #R`, y = `% decrease in similarity`)) +
 #   geom_point() +
@@ -297,6 +473,7 @@ ggsave("combined_sharpe-markowitz_True_False.pdf", combined_plot, width = 16, he
 
 ```{r}
 sharpe_ppf_resultsR <- read_csv("./sharpe_csvs_to_plot/sharpe_ppf_results_wFalse_cFalse.csv")
+
 sharpe_ppf_resultsR <- sharpe_ppf_resultsR %>%
   group_by(CS, DACS, alpha, Setting) %>%
   mutate(freq = n()) %>%
@@ -304,13 +481,13 @@ sharpe_ppf_resultsR <- sharpe_ppf_resultsR %>%
 p1 <- ggplot(sharpe_ppf_resultsR, aes(x = CS, y = DACS,size=freq)) +
   geom_point(alpha = 0.6) +
   scale_size_continuous(
-    range = c(2, 10),
-    breaks = sort(unique(sharpe_ppf_resultsR$freq))
-  ) +
+  limits = c(1, 250),
+  range = c(2, 10)
+) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   facet_grid(`alpha` ~ `Setting`) +
   theme_bw() +
-  ggtitle("Sharpe ratio")+
+  ggtitle("Sharpe Ratio")+
   theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
         axis.title = element_text(size = 16),  # Increase axis title size
     axis.text = element_text(size = 13),   # Increase axis label size
@@ -338,7 +515,11 @@ markowitz_ppf_resultsR <- markowitz_ppf_resultsR %>%
   ungroup()
 p2 <- ggplot(markowitz_ppf_resultsR, aes(x = CS, y = DACS, color = gamma, size=freq)) +
   geom_point(alpha = 0.6) +
-  scale_size_continuous(range = c(2, 10)) +
+  scale_size_continuous(
+  limits = c(1, 250),
+  range = c(2, 10),
+  breaks = c(1, 45, 80, 250)
+) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   facet_grid(`alpha` ~ `Setting`) +
   theme_bw()+
@@ -399,9 +580,10 @@ sharpe_ppf_resultsR <- sharpe_ppf_resultsR %>%
 p1 <- ggplot(sharpe_ppf_resultsR, aes(x = `PGD without coupling or warm-starting`, y = `Warm-started PGD with coupling`,size=freq)) +
   geom_point(alpha = 0.6) +
   scale_size_continuous(
-    range = c(2, 10),
-    breaks = sort(unique(sharpe_ppf_resultsR$freq))
-  ) +
+  range = c(2,12),
+  limits = c(1, 136),
+  breaks = sort(unique(sharpe_ppf_resultsR$freq))
+) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   facet_grid(`alpha` ~ `Setting`) +
   theme_bw() +
@@ -433,11 +615,15 @@ markowitz_ppf_resultsR <- markowitz_ppf_resultsR %>%
   ungroup()
 p2 <- ggplot(markowitz_ppf_resultsR, aes(x = `PGD without coupling or warm-starting`, y = `Warm-started PGD with coupling`, color = gamma, size=freq)) +
   geom_point(alpha = 0.6) +
-  scale_size_continuous(range = c(2, 10)) +
+  scale_size_continuous(
+  range = c(2,12),
+  limits = c(1, 136),
+  breaks = c(1, 25, 50, 100, 136)
+) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   facet_grid(`alpha` ~ `Setting`) +
   theme_bw()+
-  ggtitle("Markowitz objective")+
+  ggtitle("Markowitz objective") +
   theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
         axis.title = element_text(size = 16),  # Increase axis title size
     axis.text = element_text(size = 13),   # Increase axis label size
@@ -931,3 +1117,84 @@ ggsave("combined_time_sharpe-markowitz.pdf", combined_time_plot, width = 16, hei
 
 ```
 
+
+
+
+
+
+```{r}
+library(tidyverse)
+library(readr)
+library(patchwork)
+
+scale_theme <- theme_bw() +
+  theme(
+    plot.title = element_text(hjust = 0.5, vjust = 0, size = 16),
+    axis.title = element_text(size = 16),
+    axis.text = element_text(size = 13),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16)
+  )
+
+sharpe_scale_resultsR <- read_csv("./scale_sharpe.csv") %>%
+  mutate(
+    alpha = alpha_label,
+    Setting = setting
+  )
+
+p1 <- ggplot(sharpe_scale_resultsR, aes(x = n, y = total_time, group = 1)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  facet_grid(alpha ~ Setting) +
+  scale_x_continuous(breaks = sort(unique(sharpe_scale_resultsR$n))) +
+  labs(
+    x = "n",
+    y = "Time (sec)",
+    title = "Sharpe ratio"
+  ) +
+  scale_theme
+
+markowitz_scale_resultsR <- read_csv("./scale_markowitz.csv") %>%
+  mutate(
+    alpha = alpha_label,
+    Setting = setting,
+    gamma = gamma_label
+  )
+
+p2 <- ggplot(
+  markowitz_scale_resultsR,
+  aes(x = n, y = total_time, color = gamma, group = gamma)
+) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  facet_grid(alpha ~ Setting) +
+  scale_x_continuous(breaks = sort(unique(markowitz_scale_resultsR$n))) +
+  labs(
+    x = "n",
+    y = "Time (sec)",
+    title = "Markowitz objective",
+    color = NULL
+  ) +
+  scale_theme +
+  theme(legend.position = "bottom")
+
+p2_clean <- p2 +
+  guides(color = guide_legend(order = 1, nrow = 1))
+
+combined_scale_plot <- (p1 + p2_clean) +
+  plot_layout(ncol = 2) &
+  theme(
+    legend.position = "bottom",
+    legend.box = "vertical"
+  )
+
+combined_scale_plot
+
+ggsave(
+  "scale_combined_sharpe-markowitz.pdf",
+  combined_scale_plot,
+  width = 16,
+  height = 8
+)
+```

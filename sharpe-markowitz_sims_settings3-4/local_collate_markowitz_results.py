@@ -157,7 +157,7 @@ for alpha_ind in range(3):
                     ppf_df_array_dacs_val.append(ppf)
 
 
-                    ppf_df_array_setting.append(['Setting 1', 'Setting 2'][setting])
+                    ppf_df_array_setting.append(['Setting 3', 'Setting 4'][setting])
 
                     num_rejections.append(num_rejections_dict[(couple,setting,alpha_ind)][job])
                     vanilla_num_rejections.append(vanilla_num_rejections_dict[(couple,setting,alpha_ind)][job])
@@ -181,7 +181,7 @@ for alpha_ind in range(3):
                     mt_metric_serr.append([np.std(mt_metric_dacs_fdr_arr)/np.sqrt(len(mt_metric_dacs_fdr_arr)), \
                                         np.std(mt_metric_dacs_power_arr)/np.sqrt(len(mt_metric_dacs_power_arr))][label_ind])
                     mt_metric_alpha.append(alphas[alpha_ind])
-                    mt_metric_setting.append(['Setting 1', 'Setting 2'][setting])
+                    mt_metric_setting.append(['Setting 3', 'Setting 4'][setting])
                     mt_metric_method.append('DACS')
                     mt_metric_gamma.append(gammas[gamma_ind])
 
@@ -191,7 +191,7 @@ for alpha_ind in range(3):
                     mt_metric_serr.append([np.std(mt_metric_vanilla_fdr_arr)/np.sqrt(len(mt_metric_vanilla_fdr_arr)), \
                                         np.std(mt_metric_vanilla_power_arr)/np.sqrt(len(mt_metric_vanilla_power_arr))][label_ind])
                     mt_metric_alpha.append(alphas[alpha_ind])
-                    mt_metric_setting.append(['Setting 1', 'Setting 2'][setting])
+                    mt_metric_setting.append(['Setting 3', 'Setting 4'][setting])
                     mt_metric_method.append('CS')
                     mt_metric_gamma.append(gammas[gamma_ind])
 
@@ -202,7 +202,7 @@ for alpha_ind in range(3):
                 mt_metric_numr_rate.append(np.mean(mt_metric_dacs_numr_arr))
                 mt_metric_numr_serr.append(np.std(mt_metric_dacs_numr_arr)/np.sqrt(len((mt_metric_dacs_numr_arr))))
                 mt_metric_numr_alpha.append(alphas[alpha_ind])
-                mt_metric_numr_setting.append(['Setting 1', 'Setting 2'][setting])
+                mt_metric_numr_setting.append(['Setting 3', 'Setting 4'][setting])
                 mt_metric_numr_gamma.append(gammas[gamma_ind])
 
 
@@ -211,14 +211,14 @@ for alpha_ind in range(3):
                 mt_metric_numr_rate.append(np.mean(mt_metric_vanilla_numr_arr))
                 mt_metric_numr_serr.append(np.std(mt_metric_vanilla_numr_arr)/np.sqrt(len((mt_metric_vanilla_numr_arr))))
                 mt_metric_numr_alpha.append(alphas[alpha_ind])
-                mt_metric_numr_setting.append(['Setting 1', 'Setting 2'][setting])
+                mt_metric_numr_setting.append(['Setting 3', 'Setting 4'][setting])
                 mt_metric_numr_gamma.append(gammas[gamma_ind])
 
 
                 timeR.append(np.mean(time_arr))
                 timeLabelR.append('Time (sec)')
                 serrR.append(np.std(time_arr)/np.sqrt(len(time_arr)))
-                settingR.append(['Setting 1', 'Setting 2'][setting])
+                settingR.append(['Setting 3', 'Setting 4'][setting])
                 alphaR.append(alphas[alpha_ind])
                 gammaR.append(gammas[gamma_ind])
 

@@ -15,6 +15,11 @@ def bh(calibS, testS, n, m, alpha):
         FDP_hat = ((1.+numCalibRejections)/max(1.,numTestRejections))*(m/(n+1.))
         indexer -= 1
 
+    while indexer >= 0 and combinedS[argsortedS[indexer]] == np.inf:
+        numCalibRejections -= int(argsortedS[indexer] < n)
+        numTestRejections -= int(argsortedS[indexer] >= n)
+        indexer -= 1
+
     print(f'BH stopping index: {indexer}')
     if indexer < 0:
         vanillaRejections = np.zeros(m)

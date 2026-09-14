@@ -4,6 +4,10 @@ import os
 from dgps import dgp
 from scores import mu_hat
 from sklearn.metrics.pairwise import rbf_kernel
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.svm import SVC
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from dacs_core.vanillaBH import bh
@@ -48,15 +52,30 @@ for variant in range(3*variant_block, 3*(variant_block+1)):
     muHat = mu_hat(ml_alg_ind, trainX, trainY)
     calibS = get_scores(calibX, calibY, muHat)
     testS = get_scores(testX, np.zeros(m), muHat)
+    
+    train_labels = (trainY <= 0)
+
+    clf = HistGradientBoostingClassifier(
+          max_iter=300,
+          learning_rate=0.05,
+          max_leaf_nodes=31,
+          min_samples_leaf=20
+      )
+
+
+    clf.fit(trainX, train_labels)
 
 
     combinedX = np.concatenate((calibX, testX))
     similarityMatrix = rbf_kernel(combinedX, combinedX)
+    class_index = list(clf.classes_).index(True)
+    probs = clf.predict_proba(combinedX)[:, class_index]
+    log_likelihoods = np.log(probs)
 
     start = time.time()
     rejections, block_indexer, indexer, across_mc_total_time_solving = \
                   sharpe_approx_diverseSelect(calibS, testS, n, m, alpha, similarityMatrix, \
-                                            num_mc_samples, couple, skip, warm_or_custom)
+                                            num_mc_samples, couple, skip, warm_or_custom, log_likelihoods=log_likelihoods)
     end = time.time()
 
     total_time = end-start
@@ -92,7 +111,8 @@ for variant in range(3*variant_block, 3*(variant_block+1)):
 
     vanilla_metrics = [vanilla_fdp, vanilla_tdp, vanilla_num_rejections, vanilla_diversity]
 
-
+    print(diversity, vanilla_diversity)
+    print(total_time)
 
     with open(f"sharpe_results/metrics_v{variant}_w{warm_or_custom}_c{couple}.csv", "at") as file:
         file.write(",".join(map(str, metrics)) + "\n")
@@ -109,8 +129,3 @@ for variant in range(3*variant_block, 3*(variant_block+1)):
 
     with open(f"sharpe_results/pi0s_v{variant}_w{warm_or_custom}_c{couple}.csv", "at") as file:
         file.write(",".join(map(str, pi_0arr)) + "\n")
-
-
-
-    print(diversity, vanilla_diversity)
-    print(total_time)

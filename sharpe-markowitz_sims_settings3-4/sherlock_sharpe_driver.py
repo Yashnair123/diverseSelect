@@ -4,6 +4,7 @@ import os
 from dgps import dgp
 from scores import mu_hat
 from sklearn.metrics.pairwise import rbf_kernel
+from sklearn.ensemble import HistGradientBoostingClassifier
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from dacs_core.vanillaBH import bh
@@ -51,13 +52,34 @@ for variant in range(3*variant_block, 3*(variant_block+1)):
   calibS = get_scores(calibX, calibY, muHat)
   testS = get_scores(testX, np.zeros(m), muHat)
 
+  train_labels = (trainY <= 0)
+
+  clf = HistGradientBoostingClassifier(
+      max_iter=300,
+      learning_rate=0.05,
+      max_leaf_nodes=31,
+      min_samples_leaf=20
+  )
+
+  # clf = CalibratedClassifierCV(
+  #     estimator=base_clf,
+  #     method="sigmoid",
+  #     cv=5
+  # )
+
+  clf.fit(trainX, train_labels)
+
 
   combinedX = np.concatenate((calibX, testX))
   similarityMatrix = rbf_kernel(combinedX, combinedX)
 
+  class_index = list(clf.classes_).index(True)
+  probs = clf.predict_proba(combinedX)[:, class_index]
+  log_likelihoods = np.log(probs)
+
   start = time.time()
   rejections, block_indexer, indexer, _ = sharpe_approx_diverseSelect(calibS, testS, n, m, alpha, similarityMatrix, \
-                                          num_mc_samples, couple, skip, True, True)
+                                          num_mc_samples, couple, skip, True, True, log_likelihoods=log_likelihoods)
   end = time.time()
 
   total_time = end-start
