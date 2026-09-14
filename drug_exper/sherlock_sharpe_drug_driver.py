@@ -16,15 +16,17 @@ couple = True
 np.random.seed(job)
 
 unpermuted_similarity_matrix = np.load('similarityMatrix.npy')
-permutation = np.load(f'permutations/perm_j{750+job}.npy')
+permutation = np.load(f'permutations/perm_j{job}.npy')
 similarityMatrix = unpermuted_similarity_matrix[permutation][:,permutation]
 
 
-testS = np.load(f'scores_and_Ys/testS_j{750+job}.npy')
 quantile_indexer = 1
 # MAKE SURE TO SAVE FINAL RESULS BY QUANTILE INDEXER
-calibS = np.load(f'scores_and_Ys/calibS_j{750+job}_q{quantile_indexer}.npy')
-testY = np.load(f'scores_and_Ys/testY_j{750+job}_q{quantile_indexer}.npy')
+testS = np.load(f'scores_and_Ys/testS_j{job}_q{quantile_indexer}.npy')
+calibS = np.load(f'scores_and_Ys/calibS_j{job}_q{quantile_indexer}.npy')
+testY = np.load(f'scores_and_Ys/testY_j{job}_q{quantile_indexer}.npy')
+
+log_likelihoods = np.load(f'log_likelihoods/log_likelihoods_j{job}.npy')
 
 n = len(calibS)
 m = len(testS)
@@ -34,7 +36,7 @@ num_mc_samples = 500
 
 start = time.time()
 rejections, block_indexer, indexer, _ = sharpe_approx_diverseSelect(calibS, testS, n, m, alpha, \
-                                    similarityMatrix, num_mc_samples, couple, skip, True)
+                                    similarityMatrix, num_mc_samples, couple, skip, True, log_likelihoods=log_likelihoods)
 end = time.time()
 
 total_time = end-start

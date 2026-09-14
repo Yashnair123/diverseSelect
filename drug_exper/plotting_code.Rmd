@@ -23,8 +23,11 @@ sharpe_ppf_resultsR <- sharpe_ppf_resultsR %>%
 p1 <- ggplot(sharpe_ppf_resultsR, aes(x = CS, y = DACS,size=freq)) +
   geom_point(alpha = 0.6) +
   scale_size_continuous(
-    range = c(2, 10),
-    breaks = sort(unique(sharpe_ppf_resultsR$freq))
+    limits = c(1, 136),      # SAME RANGE as Markowitz plot
+    range  = c(2, 10),
+    breaks = c(1, 45, 80, 136)
+    #range = c(2, 10),
+    #breaks = sort(unique(sharpe_ppf_resultsR$freq))
   ) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   theme_bw() +
@@ -62,11 +65,16 @@ markowitz_ppf_resultsR <- markowitz_ppf_resultsR %>%
 p2 <- ggplot(markowitz_ppf_resultsR, aes(x = CS, y = DACS, size=freq)) +
   geom_point(alpha = 0.6) +
   scale_size_continuous(
-    range = c(2, 10),
-    breaks = c(1, 45, 80, 136)#sort(unique(markowitz_ppf_resultsR$freq))
+    limits = c(1, 136),      # SAME RANGE as Markowitz plot
+    range  = c(2, 10),
+    breaks = c(1, 45, 80, 136)
+    #range = c(2, 10),
+    #breaks = c(1, 45, 80, 136)#sort(unique(markowitz_ppf_resultsR$freq))
   ) +
   geom_abline(slope = 1, intercept = 0, color = "red") +
   facet_grid(~ `gamma`, scales = "free_x") +
+  #facet_grid(~ gamma) +          # <- removed scales = "free_x"
+  #coord_fixed(ratio = 1) +       # <- now works, and 45° is truly 45°
   theme_bw()+
   ggtitle("Markowitz objective")+
   theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
@@ -118,6 +126,50 @@ combined_plot
 ggsave("combined_sharpe-markowitz.pdf", combined_plot, width = 16, height = 8)
 
 ```
+
+
+just the middle:
+```{r}
+markowitz_ppf_resultsR <- read_csv("./markowitz_csvs_to_plot/markowitz_ppf_results.csv")
+markowitz_ppf_resultsR <- markowitz_ppf_resultsR %>%
+  group_by(CS, DACS, gamma) %>%
+  mutate(freq = n()) %>%
+  ungroup()
+
+# Filter to keep only the middle gamma value
+unique_gammas <- sort(unique(markowitz_ppf_resultsR$gamma))
+middle_gamma <- unique_gammas[2]  # Gets the middle value (2nd of 3)
+
+markowitz_ppf_resultsR_middle <- markowitz_ppf_resultsR %>%
+  filter(gamma == middle_gamma)
+
+p2 <- ggplot(markowitz_ppf_resultsR_middle, aes(x = CS, y = DACS, size=freq)) +
+  geom_point(alpha = 0.6) +
+  scale_size_continuous(
+    range = c(2, 10),
+    breaks = c(1, 45, 80, 136)
+  ) +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  theme_bw()+
+  ggtitle("Markowitz objective")+
+  theme(plot.title = element_text(hjust = 0.5,vjust=0,size = 16),
+        axis.title = element_text(size = 16),
+    axis.text = element_text(size = 13),
+    legend.title = element_text(size = 16),
+    legend.text = element_text(size = 16),
+    strip.text = element_text(size = 16))
+
+
+
+combined_plot
+ggsave("markowitz_middle.pdf", p2, width = 8, height = 8)
+```
+
+
+
+
+
+
 
 
 ```{r}

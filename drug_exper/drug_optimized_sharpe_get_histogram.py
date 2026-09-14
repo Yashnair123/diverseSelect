@@ -23,14 +23,14 @@ for variant in tqdm(np.arange(variant_block*10, min((variant_block+1)*10,250))):
     job = variants[variant]
     np.random.seed(job)
     
-    permutation = np.load(f'permutations/perm_j{750+variant}.npy')
+    permutation = np.load(f'permutations/perm_j{job}.npy')
     similarityMatrix = unpermuted_similarity_matrix[permutation][:,permutation]
 
-    testS = np.load(f'scores_and_Ys/testS_j{750+variant}.npy')
     quantile_indexer = 1
+    testS = np.load(f'scores_and_Ys/testS_j{job}_q{quantile_indexer}.npy')
     # MAKE SURE TO SAVE FINAL RESULS BY QUANTILE INDEXER
-    calibS = np.load(f'scores_and_Ys/calibS_j{750+variant}_q{quantile_indexer}.npy')
-    testY = np.load(f'scores_and_Ys/testY_j{750+variant}_q{quantile_indexer}.npy')
+    calibS = np.load(f'scores_and_Ys/calibS_j{job}_q{quantile_indexer}.npy')
+    testY = np.load(f'scores_and_Ys/testY_j{job}_q{quantile_indexer}.npy')
 
     n = len(calibS)
     m = len(testS)

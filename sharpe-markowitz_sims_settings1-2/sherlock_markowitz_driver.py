@@ -4,6 +4,10 @@ import os
 from dgps import dgp
 from scores import mu_hat
 from sklearn.metrics.pairwise import rbf_kernel
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.svm import SVC
 import time
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from dacs_core.vanillaBH import bh
@@ -25,6 +29,7 @@ for gamma_indexer in range(3):
 variant_block = int(sys.argv[1])
 
 for variant in np.arange(variant_block*5, (variant_block+1)*5):
+  print(variant)
   for (warm_or_custom, couple) in [(True, True), (False, True), (True, False)]:
     ml_alg_ind = 1
     job, setting, gamma_indexer, alpha_ind = variants[variant]
@@ -53,6 +58,22 @@ for variant in np.arange(variant_block*5, (variant_block+1)*5):
     calibX, calibY = dgp(n, noise, setting)
     testX, testY = dgp(m, noise, setting)
 
+    # clf = SVC(kernel="rbf", probability=True)
+    # clf.fit(trainX, trainY>0)
+
+    train_labels = (trainY <= 0)
+
+    clf = HistGradientBoostingClassifier(
+        max_iter=300,
+        learning_rate=0.05,
+        max_leaf_nodes=31,
+        min_samples_leaf=20
+    )
+
+
+    clf.fit(trainX, train_labels)
+    
+
     muHat = mu_hat(ml_alg_ind, trainX, trainY)
     calibS = get_scores(calibX, calibY, muHat)
     testS = get_scores(testX, np.zeros(m), muHat)
@@ -60,12 +81,16 @@ for variant in np.arange(variant_block*5, (variant_block+1)*5):
 
     combinedX = np.concatenate((calibX, testX))
     similarityMatrix = rbf_kernel(combinedX, combinedX)
+    class_index = list(clf.classes_).index(True)
+    probs = clf.predict_proba(combinedX)[:, class_index]
+    log_likelihoods = np.log(probs)
+    # log_likelihoods = clf.predict_log_proba(combinedX)[:, class_index]
 
     start = time.time()
     print(gamma)
     rejections, block_indexer, indexer, across_mc_total_time_solving \
                 = markowitz_approx_diverseSelect(calibS, testS, n, m, alpha, gamma, \
-                                        similarityMatrix, num_mc_samples, couple, skip, warm_or_custom)
+                                        similarityMatrix, num_mc_samples, couple, skip, warm_or_custom, log_likelihoods=log_likelihoods)
     end = time.time()
 
     total_time = end-start

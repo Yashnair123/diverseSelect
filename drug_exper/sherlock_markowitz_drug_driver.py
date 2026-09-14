@@ -27,11 +27,13 @@ unpermuted_similarity_matrix = np.load('similarityMatrix.npy')
 permutation = np.load(f'permutations/perm_j{variant%250}.npy')
 similarityMatrix = unpermuted_similarity_matrix[permutation][:,permutation]
 
-testS = np.load(f'scores_and_Ys/testS_j{variant%250}.npy')
 quantile_indexer = 1
+testS = np.load(f'scores_and_Ys/testS_j{variant%250}_q{quantile_indexer}.npy')
 # MAKE SURE TO SAVE FINAL RESULS BY QUANTILE INDEXER
 calibS = np.load(f'scores_and_Ys/calibS_j{variant%250}_q{quantile_indexer}.npy')
 testY = np.load(f'scores_and_Ys/testY_j{variant%250}_q{quantile_indexer}.npy')
+
+log_likelihoods = np.load(f'log_likelihoods/log_likelihoods_j{job}.npy')
 
 
 n = len(calibS)
@@ -42,7 +44,7 @@ num_mc_samples = 500
 
 start = time.time()
 rejections, block_indexer, indexer, _ = markowitz_approx_diverseSelect(calibS, testS, n, m, alpha, gamma, \
-                                    similarityMatrix, num_mc_samples, couple, skip)
+                                    similarityMatrix, num_mc_samples, couple, skip, log_likelihoods=log_likelihoods)
 end = time.time()
 
 total_time = end-start

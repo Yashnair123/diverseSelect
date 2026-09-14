@@ -10,6 +10,7 @@ from DeepPurpose.utils import *
 from DeepPurpose.dataset import *
 from rdkit import Chem
 from rdkit import DataStructs
+from sklearn.isotonic import IsotonicRegression
 #from rdkit.ML.Cluster import Butina
 #from rdkit.Chem import Draw
 #from rdkit.Chem import rdFingerprintGenerator
@@ -17,6 +18,7 @@ from rdkit import DataStructs
 import warnings
 import numpy as np
 import sys 
+import os
 import pandas as pd 
 warnings.filterwarnings("ignore")
 
@@ -136,10 +138,137 @@ test_pred = model.predict(dtest)
 
 
 
+# ------------------------------------------------------------
+# Binary classifier for indicator Y <= q5
+# ------------------------------------------------------------
+
+def add_q5_labels_from_reference(df, ref_df):
+    """
+    Label df using target-specific medians computed from ref_df.
+    Fallback: global median in ref_df if target sequence is unseen.
+    """
+    out = df.copy()
+    global_q5 = np.quantile(ref_df["Label"].to_numpy(), 0.5)
+    target_q5 = ref_df.groupby("Target Sequence")["Label"].median()
+
+    q5 = (
+        out["Target Sequence"]
+        .map(target_q5)
+        .fillna(global_q5)
+        .to_numpy()
+    )
+
+    y_binary = (out["Label"].to_numpy() <= q5).astype(float)
+
+    out["q5"] = q5
+    out["Label"] = y_binary
+    return out, q5
+
+
+def add_crossfit_q5_labels(df, n_folds=5, seed=0):
+    """
+    Create binary labels for df with q5 computed out-of-fold.
+
+    For examples in fold k, q5 is computed using examples not in fold k.
+    This prevents an example's own Y from influencing its threshold.
+    """
+    df = df.reset_index(drop=True).copy()
+    n = len(df)
+
+    perm = np.random.permutation(n)
+
+    fold_id = np.empty(n, dtype=int)
+    fold_id[perm] = np.arange(n) % n_folds
+
+    q5 = np.zeros(n)
+
+    for k in range(n_folds):
+        heldout = fold_id == k
+        ref_df = df.loc[~heldout]
+
+        global_q5 = np.quantile(ref_df["Label"].to_numpy(), 0.5)
+        target_q5 = ref_df.groupby("Target Sequence")["Label"].median()
+
+        q5[heldout] = (
+            df.loc[heldout, "Target Sequence"]
+            .map(target_q5)
+            .fillna(global_q5)
+            .to_numpy()
+        )
+
+    y_binary = (df["Label"].to_numpy() <= q5).astype(float)
+
+    out = df.copy()
+    out["q5"] = q5
+    out["Label"] = y_binary
+    return out, q5
+
+
+# Cross-fitted binary labels for classifier training.
+clf_train, trainq5_cv = add_crossfit_q5_labels(
+    ttrain,
+    n_folds=5,
+    seed=seed,
+)
+
+# Validation labels are defined using the full classifier-training reference set.
+clf_val, valq5 = add_q5_labels_from_reference(
+    tval,
+    ttrain,
+)
+
+# For prediction, DeepPurpose only needs the encoded inputs.
+# Setting Label to 0 is harmless and avoids mixing regression labels into
+# a binary model's prediction dataframe.
+clf_dcalib = dcalib.copy()
+clf_dtest = dtest.copy()
+clf_dcalib["Label"] = 0.0
+clf_dtest["Label"] = 0.0
+
+
+clf_config = utils.generate_config(
+    drug_encoding=drug_encoding,
+    target_encoding=target_encoding,
+    cls_hidden_dims=[1024, 1024, 512],
+    train_epoch=20,
+    LR=0.001,
+    batch_size=128,
+    hidden_dim_drug=128,
+    mpnn_hidden_size=128,
+    mpnn_depth=3,
+    cnn_target_filters=[32, 64, 96],
+    cnn_target_kernels=[4, 8, 12],
+)
+clf_config["binary"] = True
+
+clf_model = models.model_initialize(**clf_config)
+clf_model.train(clf_train, clf_val)
+
+# Predicted probabilities for class 1 = indicator(Y <= q5), calibrating using isotonic regression
+calib_cls_prob = np.array(clf_model.predict(clf_dcalib)).reshape(-1)
+test_cls_prob = np.array(clf_model.predict(clf_dtest)).reshape(-1)
+
+val_prob = np.array(clf_model.predict(clf_val)).reshape(-1)
+val_y = clf_val["Label"].to_numpy()
+
+calibrator = IsotonicRegression(out_of_bounds="clip")
+calibrator.fit(val_prob, val_y)
+
+calib_cls_prob = calibrator.predict(calib_cls_prob)
+test_cls_prob = calibrator.predict(test_cls_prob)
+
+probs = np.concatenate((calib_cls_prob, test_cls_prob))
+log_likelihoods = np.log(probs)
+
+# log_likelihoods = np.log(np.clip(np.concatenate((calib_cls_prob, test_cls_prob)), 1e-15, 1.0))
+
+# os.makedirs("./log_likelihoods", exist_ok=True)
+np.save(f'./log_likelihoods/log_likelihoods_j{seed}.npy', log_likelihoods)
+
 # get scores
 
-def get_scores(Y, predictions):
-  return np.where(Y > 0, np.inf, -predictions)
+def get_scores(Y, predictions, quantiles):
+  return np.where(Y > quantiles, np.inf, quantiles-predictions)
 
 calib_pred = np.array(calib_pred)
 test_pred = np.array(test_pred)
@@ -151,19 +280,18 @@ test_quantiles = [testq2, testq5, testq7, testq8, testq9]
 
 
 
-testS = get_scores(np.zeros(m), test_pred)
-np.save(f'./scores_and_Ys/testS_j{seed}.npy', testS)
-
 for quantile_indexer in range(5):
-    adjusted_calibY = dcalib['Label'].to_numpy() - calib_quantiles[quantile_indexer]
+    # adjusted_calibY = dcalib['Label'].to_numpy() - calib_quantiles[quantile_indexer]
     adjusted_testY = dtest['Label'].to_numpy() - test_quantiles[quantile_indexer]
 
-
-    calibS = get_scores(adjusted_calibY, calib_pred)
+    calibS = get_scores(dcalib['Label'].to_numpy(), calib_pred, calib_quantiles[quantile_indexer])
+    # calibS = get_scores(adjusted_calibY, calib_pred)
     np.save(f'./scores_and_Ys/calibS_j{seed}_q{quantile_indexer}.npy', calibS)
     np.save(f'./scores_and_Ys/testY_j{seed}_q{quantile_indexer}.npy', adjusted_testY)
 
-
+    testS = test_quantiles[quantile_indexer] - test_pred
+    # testS = get_scores(np.zeros(m), test_pred)
+    np.save(f'./scores_and_Ys/testS_j{seed}_q{quantile_indexer}.npy', testS)
 
 
 
